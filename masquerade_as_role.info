@@ -1,1 +1,4 @@
-name = Masquerade as Role
+name = Masquerade As Role
+description = Allows to masquerade as a set of roles instead of an existing user.
+core = 7.x
+dependencies[] = masquerade
