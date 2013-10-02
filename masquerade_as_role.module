@@ -4,9 +4,10 @@
 //TODO test when LDAP not in mixed mode
 //TODO write tests
 //TODO test perm masq_user without masq_role, vice versa etc -> show field user only if perm, idem for role
-//TODO cron remove unused user (see cron stuff ni masquerade)
 //TODO test that, when a regular user logs out, it is not deleted.
 //TODO test menu item masquerade/switch (does the user ultimately gets removed ?)
+//TODO test cron
+//TODO run coder
 
 /**
  * Implements hook_permission().
@@ -18,6 +19,23 @@ function masquerade_as_role_permission() {
       'description' => t('Masquerade as any role.'),
     )
   );
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * Clean up temporary users with invalid sessions, i.e. when people didn't use
+ * the switch back link that would have cleanly removed the temporary user.
+ */
+function masquerade_as_role_cron() {
+  // Watch http://drupal.org/node/268487 before modifying this query.
+  $subquery = db_select('sessions', 's');
+  $subquery->addField('s', 'sid');
+
+  $query = db_delete('users');
+  $query->condition('sid', $subquery, 'NOT IN');
+  $query->condition('data', array('masquerade_as_role' => TRUE));
+  $query->execute();
 }
 
 /**
