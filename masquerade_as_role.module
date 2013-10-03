@@ -1,6 +1,5 @@
 <?php
 
-//TODO javascript empty one field when the other is filled in.
 //TODO test when LDAP not in mixed mode
 //TODO write tests
 //TODO test perm masq_user without masq_role, vice versa etc -> show field user only if perm, idem for role
@@ -70,6 +69,10 @@ function masquerade_as_role_form_masquerade_block_1_alter(&$form, &$form_alter, 
     $form['masquerade_user_field']['#weight'] = 1;
     $form['masquerade_role_field']['#weight'] = 2;
     $form['submit']['#weight'] = 3;
+    // Add custom JS.
+    $form['#attached']['js'] = array(
+      drupal_get_path('module', 'masquerade_as_role') . '/js/masquerade_as_role.js',
+    );
     // Set custom handlers.
     $form['#validate'] = array('masquerade_as_role_form_masquerade_block_1_validate');
     $form['#submit']   = array('masquerade_as_role_form_masquerade_block_1_submit');
