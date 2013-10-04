@@ -1,24 +1,11 @@
 <?php
 
 //TODO test when LDAP not in mixed mode
-//TODO write tests
-//TODO test perm masq_user without masq_role, vice versa etc -> show field user only if perm, idem for role
+//TODO write main tests
 //TODO test that, when a regular user logs out, it is not deleted.
 //TODO test menu item masquerade/switch (does the user ultimately gets removed ?)
 //TODO test cron
 //TODO run coder
-
-/**
- * Implements hook_permission().
- */
-function masquerade_as_role_permission() {
-  return array(
-    'masquerade as role' => array(
-      'title' => t('Masquerade as role'),
-      'description' => t('Masquerade as any role.'),
-    )
-  );
-}
 
 /**
  * Implements hook_cron().
@@ -38,16 +25,6 @@ function masquerade_as_role_cron() {
 }
 
 /**
- * Implements hook_block_view_MODULE_DELTA_alter().
- */
-function masquerade_as_role_block_view_masquerade_masquerade_alter(&$data, $block) {
-  // Show block if user not allowed to masquerade as user but allowed to masquerade as role.
-  if (empty($data) && user_access('masquerade as role')) {
-    $data['subject'] = t('Masquerade');
-    $data['content'] = drupal_get_form('masquerade_block_1');
-  }
-}
-/**
  * Implements hook_form_FORM_ID_alter().
  */
 function masquerade_as_role_form_masquerade_block_1_alter(&$form, &$form_alter, $form_id) {
@@ -58,10 +35,14 @@ function masquerade_as_role_form_masquerade_block_1_alter(&$form, &$form_alter, 
     unset($form['masquerade_desc']);
     unset($form['masquerade_user_field']['#prefix']);
     unset($form['submit']['#suffix']);
-    // Add our custom field.
+    // Add our custom field. Do not allow admin roles if perm not granted.
+    $roles = user_roles();
+    if (!user_access('masquerade as admin')) {
+      $roles = array_diff_key($roles, array_filter(variable_get('masquerade_admin_roles', array())));
+    }
     $form['masquerade_role_field'] = array(
       '#type' => 'select',
-      '#options' => user_roles(),
+      '#options' => $roles,
       '#description' => t('Alternatively, select one or several role(s) to masquerade as.'),
       '#multiple' => TRUE,
     );

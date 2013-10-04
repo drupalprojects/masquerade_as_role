@@ -19,10 +19,12 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
   }
 
   private $user;
+  private $admin;
 
   function setUp() {
     parent::setUp('masquerade_as_role');
-    $this->user = $this->drupalCreateUser(array('masquerade as user', 'masquerade as role', 'administer blocks'));
+    $this->user  = $this->drupalCreateUser(array('administer blocks', 'administer masquerade', 'masquerade as user'));
+    $this->admin = $this->drupalCreateUser(array('administer blocks', 'administer masquerade', 'masquerade as admin'));
     $this->drupalLogin($this->user);
     $block = block_load('masquerade', 'masquerade');
     $this->moveBlockToRegion($block, 'content');
@@ -30,6 +32,8 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
 
 
   /**
+   * UI test.
+   *
    * The Masquerade block displays our custom select box.
    */
   function testUI() {
@@ -38,6 +42,28 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
     $this->assertField('masquerade_user_field');
     $this->assertField('masquerade_role_field[]');
     $this->assertText('Alternatively, select one or several role(s) to masquerade as.');
+  }
+
+  /**
+   * Perms test.
+   *
+   * Admin roles do not show up if perm 'masquerade as admin' not granted.
+   */
+  function testPerms() {
+    // We arbitrarity use rid 3.
+    $this->setMasqueradeAdminRoles(array(3));
+
+    // Without perm 'masquerade as admin', admin roles do not show up.
+    $this->drupalLogin($this->user);
+    $this->drupalGet('');
+    $this->assertResponse(200);
+    $this->assertNoOption('masquerade_role_field[]', 3);
+
+    // With perm 'masquerade as admin', admin roles show up.
+    $this->drupalLogin($this->admin);
+    $this->drupalGet('');
+    $this->assertResponse(200);
+    $this->assertOption('masquerade_role_field[]', 3);
   }
 
   /**
@@ -54,6 +80,46 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
     );
     $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
     $this->assertResponse(200);
+  }
+
+  /**
+   * Helper - Sets masquerade admin roles.
+   *
+   * @param $rids Array of role IDs.
+   */
+  function setMasqueradeAdminRoles($rids = array()) {
+    $this->drupalGet('admin/config/people/masquerade');
+    $this->assertResponse(200);
+    $edit = array();
+    foreach ($rids as $rid) {
+      $edit["masquerade_admin_roles[$rid]"] = $rid;
+    }
+    $this->drupalPost(NULL, $edit, t('Save configuration'));
+    $this->assertResponse(200);
+  }
+
+  /**
+   * Helper - Assert that a select option exists.
+   *
+   * @param $name Name of select field to assert.
+   * @param $option Option to assert.
+   * @param $message Message to display.
+   */
+  function assertOption($name, $option, $message = '') {
+    $elements = $this->xpath('//select[@name=:name]//option[@value=:option]', array(':name' => $name, ':option' => $option));
+    return $this->assertFalse(empty($elements[0]), $message ? $message : t('Option @option for field @name exists.', array('@option' => $option, '@name' => $name)), t('Browser'));
+  }
+
+  /**
+   * Helper - Assert that a select option does not exist.
+   *
+   * @param $name Name of select field to assert.
+   * @param $option Option to assert.
+   * @param $message Message to display.
+   */
+  function assertNoOption($name, $option, $message = '') {
+    $elements = $this->xpath('//select[@name=:name]//option[@value=:option]', array(':name' => $name, ':option' => $option));
+    return $this->assertTrue(empty($elements[0]), $message ? $message : t('Option @option for field @name does not exist.', array('@option' => $option, '@name' => $name)), t('Browser'));
   }
 
 }
