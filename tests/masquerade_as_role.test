@@ -23,8 +23,8 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
 
   function setUp() {
     parent::setUp('masquerade_as_role');
-    $this->user  = $this->drupalCreateUser(array('administer blocks', 'administer masquerade', 'masquerade as user'));
-    $this->admin = $this->drupalCreateUser(array('administer blocks', 'administer masquerade', 'masquerade as admin'));
+    $this->user  = $this->drupalCreateUser(array('administer blocks', 'administer permissions', 'administer masquerade', 'masquerade as user'));
+    $this->admin = $this->drupalCreateUser(array('administer blocks', 'administer permissions', 'administer masquerade', 'masquerade as admin'));
     $this->drupalLogin($this->user);
     $block = block_load('masquerade', 'masquerade');
     $this->moveBlockToRegion($block, 'content');
@@ -50,21 +50,75 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
    * Admin roles do not show up if perm 'masquerade as admin' not granted.
    */
   function testPerms() {
-    // We arbitrarity use rid 3.
-    $this->setMasqueradeAdminRoles(array(3));
+    // Create an admin role.
+    $rid = $this->drupalCreateRole(array());
+    $this->setMasqueradeAdminRoles(array($rid));
 
     // Without perm 'masquerade as admin', admin roles do not show up.
     $this->drupalLogin($this->user);
     $this->drupalGet('');
     $this->assertResponse(200);
-    $this->assertNoOption('masquerade_role_field[]', 3);
+    $this->assertNoOption('masquerade_role_field[]', $rid);
 
     // With perm 'masquerade as admin', admin roles show up.
     $this->drupalLogin($this->admin);
     $this->drupalGet('');
     $this->assertResponse(200);
-    $this->assertOption('masquerade_role_field[]', 3);
+    $this->assertOption('masquerade_role_field[]', $rid);
   }
+
+  /**
+   * Feature test.
+   *
+   * Users can maquerade as a set of roles and switch back.
+   */
+  function testFeature() {
+    // Create roles we will masquerade as.
+    // We will need 'admin perms' to assert roles when masquerading.
+    $rid1 = $this->drupalCreateRole(array('administer permissions'));
+    $rid2 = $this->drupalCreateRole(array());
+
+    // Assert user does not have roles before masquerading.
+    $this->drupalGet('user');
+    $this->assertResponse(200);
+    $this->clickLink(t('Edit'));
+    $this->assertResponse(200);
+    $this->assertNoFieldChecked("edit-roles-$rid1");
+    $this->assertNoFieldChecked("edit-roles-$rid2");
+
+    // Masquerade.
+    $this->drupalGet('');
+    $this->assertResponse(200);
+    $this->assertField('masquerade_role_field[]');
+    $edit = array(
+      'masquerade_role_field[]' => array($rid1, $rid2),
+    );
+    $this->drupalPost(NULL, $edit, t('Go'));
+    $this->assertResponse(200);
+    $this->assertText('You are now masquerading as');
+
+    // Assert user has roles while masquerading.
+    $this->drupalGet('user');
+    $this->assertResponse(200);
+    $this->clickLink(t('Edit'));
+    $this->assertResponse(200);
+    $this->assertFieldChecked("edit-roles-$rid1");
+    $this->assertFieldChecked("edit-roles-$rid2");
+
+    // Switch back.
+    $this->clickLink(t('Switch back'));
+    $this->assertResponse(200);
+    $this->assertText('You are no longer masquerading as');
+
+    // Assert user does not have roles after masquerading.
+    $this->drupalGet('user');
+    $this->assertResponse(200);
+    $this->clickLink(t('Edit'));
+    $this->assertResponse(200);
+    $this->assertNoFieldChecked("edit-roles-$rid1");
+    $this->assertNoFieldChecked("edit-roles-$rid2");
+  }
+
 
   /**
    * Helper - Move a block to a region.
