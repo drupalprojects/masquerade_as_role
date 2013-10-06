@@ -3,10 +3,9 @@
 //TODO test when LDAP not in mixed mode
 //TODO test that, when a regular user logs out, it is not deleted.
 //TODO test menu item masquerade/switch (does the user ultimately gets removed ?)
-//TODO test cron
-//TODO isolation test / does not interfere with regular masquerade module.
 //TODO run coder
 //TODO add 'masquerade as role' perm and show listbox only when granted.
+//TODO verify cron does not delete regular users.
 
 /**
  * Implements hook_cron().
@@ -17,11 +16,11 @@
 function masquerade_as_role_cron() {
   // Watch http://drupal.org/node/268487 before modifying this query.
   $subquery = db_select('sessions', 's');
-  $subquery->addField('s', 'sid');
+  $subquery->addField('s', 'uid');
 
   $query = db_delete('users');
-  $query->condition('sid', $subquery, 'NOT IN');
-  $query->condition('data', array('masquerade_as_role' => TRUE));
+  $query->condition('data', serialize(array('masquerade_as_role' => TRUE)));
+  $query->condition('uid',  $subquery, 'NOT IN');
   $query->execute();
 }
 
@@ -104,7 +103,7 @@ function masquerade_as_role_form_masquerade_block_1_submit($form, &$form_state) 
     $edit['status'] = 1;
     $account = user_save(drupal_anonymous_user(), $edit);
     if (empty($account->uid)) {
-      drupal_set_message(t('Could not create a temporary user with roles %roles. Please try again.', array('%roles' => drupal_implode_tags($roles_name))), 'error');
+      drupal_set_message(t('Could not create a temporary user with roles %roles.', array('%roles' => drupal_implode_tags($roles_name))), 'error');
     }
     else {
       drupal_set_message(t('Created temporary user !user with roles %roles.', array('!user' => theme('username', array('account' => $account)), '%roles' => drupal_implode_tags($roles_name))));

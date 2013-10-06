@@ -89,26 +89,55 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
     $this->assertNoRole($rid1);
     $this->assertNoRole($rid2);
   }
-  
+ 
   /**
-   * Clean up test.
+   * Clean up test (when switching back).
    *
    * A temporary user is created when masquerading as role, and deleted when switching back.
    */
-  function testCleanUp() {
+  function testCleanUpRegular() {
     // Create a role + get initial number of users.
     $rid = $this->drupalCreateRole(array());
     $userCount = $this->getUserCount();
 
     // Masquerade as role + assert number of users has been incremented.
     $this->masqueradeAsRoles(array($rid));
+    $this->assertText(t('Created temporary user'));
     $this->assertEqual($this->getUserCount(), $userCount + 1);
 
     // Switch back + assert number of users is the same as initially.
     $this->switchBack();
+    $this->assertText(t('Deleted temporary user'));
     $this->assertEqual($this->getUserCount(), $userCount);
   }
 
+  /**
+   * Clean up test (when no switching back).
+   *
+   * Cron takes care of deleting temporary accounts when the user did not switch back.
+   */
+  /*
+  function testCleanUpCron() {
+    // Create a role + get initial number of users.
+    $rid = $this->drupalCreateRole(array());
+    $userCount = $this->getUserCount();
+
+    // Masquerade as role + assert number of users has been incremented.
+    $this->masqueradeAsRoles(array($rid));
+    $this->assertText(t('Created temporary user'));
+    $this->assertEqual($this->getUserCount(), $userCount + 1);
+
+    // Log out + assert number of users has not been decremented.
+    $this->drupalLogout();
+    $this->assertEqual($this->getUserCount(), $userCount + 1);
+ 
+    // Run cron + assert number of users is the same as initially.
+    // TODO for some reason, {sessions} is always empty and thus does not allow
+    // to test our cron task.
+    $this->cronRun();
+    $this->assertEqual($this->getUserCount(), $userCount);
+  }
+  */
 
   /**
    * Helper - Move a block to a region.
