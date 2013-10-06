@@ -4,7 +4,6 @@
 //TODO test that, when a regular user logs out, it is not deleted.
 //TODO test menu item masquerade/switch (does the user ultimately gets removed ?)
 //TODO test cron
-//TODO clean up test / assert user is created and then deleted
 //TODO isolation test / does not interfere with regular masquerade module.
 //TODO run coder
 //TODO add 'masquerade as role' perm and show listbox only when granted.

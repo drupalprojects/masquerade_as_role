@@ -79,7 +79,7 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
     $this->assertNoRole($rid1);
     $this->assertNoRole($rid2);
 
-    // Masquerade + assert user has roles while masquerading.
+    // Masquerade as roles + assert user has roles while masquerading.
     $this->masqueradeAsRoles(array($rid1, $rid2));
     $this->assertRole($rid1);
     $this->assertRole($rid2);
@@ -88,6 +88,25 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
     $this->switchBack();
     $this->assertNoRole($rid1);
     $this->assertNoRole($rid2);
+  }
+  
+  /**
+   * Clean up test.
+   *
+   * A temporary user is created when masquerading as role, and deleted when switching back.
+   */
+  function testCleanUp() {
+    // Create a role + get initial number of users.
+    $rid = $this->drupalCreateRole(array());
+    $userCount = $this->getUserCount();
+
+    // Masquerade as role + assert number of users has been incremented.
+    $this->masqueradeAsRoles(array($rid));
+    $this->assertEqual($this->getUserCount(), $userCount + 1);
+
+    // Switch back + assert number of users is the same as initially.
+    $this->switchBack();
+    $this->assertEqual($this->getUserCount(), $userCount);
   }
 
 
@@ -105,6 +124,15 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
     );
     $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
     $this->assertResponse(200);
+  }
+
+  /**
+   * Helper - Get number of users.
+   *
+   * @return Number of users in DB.
+   */
+  function getUserCount() {
+    return db_select('users', 'u')->countQuery()->execute()->fetchField();
   }
 
   /**
@@ -186,7 +214,6 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
    * Note: the user needs perm 'administer permissions'.
    *
    * @param $rid The role ID to assert.
-   * @return TRUE if current user has the role ; FALSE otherwise.
    */
   function assertRole($rid) {
     $this->drupalGet('user');
@@ -202,7 +229,6 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
    * Note: the user needs perm 'administer permissions'.
    *
    * @param $rid The role ID to assert.
-   * @return TRUE if current user has the role ; FALSE otherwise.
    */
   function assertNoRole($rid) {
     $this->drupalGet('user');
