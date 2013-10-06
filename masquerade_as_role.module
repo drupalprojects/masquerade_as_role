@@ -1,7 +1,5 @@
 <?php
 
-//TODO test when LDAP not in mixed mode
-//TODO run coder
 
 /**
  * Implements hook_permission.
