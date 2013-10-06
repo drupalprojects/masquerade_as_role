@@ -116,8 +116,8 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
    *
    * Cron takes care of deleting temporary accounts when the user did not switch back.
    */
-  /*
   function testCleanUpCron() {
+    /*
     // Create a role + get initial number of users.
     $rid = $this->drupalCreateRole(array());
     $userCount = $this->getUserCount();
@@ -136,8 +136,20 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
     // to test our cron task.
     $this->cronRun();
     $this->assertEqual($this->getUserCount(), $userCount);
+    */
   }
-  */
+
+  /**
+   * Isolation test.
+   *
+   * When a regular user logs out, it is not deleted.
+   */
+  function testIsolation() {
+    $userCount = $this->getUserCount();
+    $this->drupalLogout();
+    $this->assertEqual($userCount, $this->getUserCount());
+  }
+
 
   /**
    * Helper - Move a block to a region.

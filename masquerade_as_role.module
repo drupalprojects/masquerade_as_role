@@ -1,11 +1,9 @@
 <?php
 
 //TODO test when LDAP not in mixed mode
-//TODO test that, when a regular user logs out, it is not deleted.
 //TODO test menu item masquerade/switch (does the user ultimately gets removed ?)
 //TODO run coder
 //TODO add 'masquerade as role' perm and show listbox only when granted.
-//TODO verify cron does not delete regular users.
 
 /**
  * Implements hook_cron().
