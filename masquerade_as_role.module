@@ -1,9 +1,19 @@
 <?php
 
 //TODO test when LDAP not in mixed mode
-//TODO test menu item masquerade/switch (does the user ultimately gets removed ?)
 //TODO run coder
-//TODO add 'masquerade as role' perm and show listbox only when granted.
+
+/**
+ * Implements hook_permission.
+ */
+function masquerade_as_role_permission() {
+  return array(
+    'masquerade as role' => array(
+      'title' => t('Masquerade as role'),
+      'description' => drupal_placeholder(t('Note: Permission "Masquerade as admin" is required to masquerade as admin roles.')),
+    ),
+  );
+}
 
 /**
  * Implements hook_cron().
@@ -26,7 +36,7 @@ function masquerade_as_role_cron() {
  * Implements hook_form_FORM_ID_alter().
  */
 function masquerade_as_role_form_masquerade_block_1_alter(&$form, &$form_alter, $form_id) {
-  if (!isset($_SESSION['masquerading'])) {
+  if (user_access('masquerade as role') && !isset($_SESSION['masquerading'])) {
     // Rearrange fields from masquerade.module.
     $form['masquerade_user_field']['#description'] = $form['masquerade_desc']['#markup'];
     $form['masquerade_user_field']['#required'] = FALSE;
