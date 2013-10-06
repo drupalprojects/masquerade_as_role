@@ -73,50 +73,21 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
    * Users can maquerade as a set of roles and switch back.
    */
   function testFeature() {
-    // Create roles we will masquerade as.
-    // We will need 'admin perms' to assert roles when masquerading.
+    // Create roles we will masquerade as + assert user does not have roles before masquerading.
     $rid1 = $this->drupalCreateRole(array('administer permissions'));
     $rid2 = $this->drupalCreateRole(array());
+    $this->assertNoRole($rid1);
+    $this->assertNoRole($rid2);
 
-    // Assert user does not have roles before masquerading.
-    $this->drupalGet('user');
-    $this->assertResponse(200);
-    $this->clickLink(t('Edit'));
-    $this->assertResponse(200);
-    $this->assertNoFieldChecked("edit-roles-$rid1");
-    $this->assertNoFieldChecked("edit-roles-$rid2");
+    // Masquerade + assert user has roles while masquerading.
+    $this->masqueradeAsRoles(array($rid1, $rid2));
+    $this->assertRole($rid1);
+    $this->assertRole($rid2);
 
-    // Masquerade.
-    $this->drupalGet('');
-    $this->assertResponse(200);
-    $this->assertField('masquerade_role_field[]');
-    $edit = array(
-      'masquerade_role_field[]' => array($rid1, $rid2),
-    );
-    $this->drupalPost(NULL, $edit, t('Go'));
-    $this->assertResponse(200);
-    $this->assertText('You are now masquerading as');
-
-    // Assert user has roles while masquerading.
-    $this->drupalGet('user');
-    $this->assertResponse(200);
-    $this->clickLink(t('Edit'));
-    $this->assertResponse(200);
-    $this->assertFieldChecked("edit-roles-$rid1");
-    $this->assertFieldChecked("edit-roles-$rid2");
-
-    // Switch back.
-    $this->clickLink(t('Switch back'));
-    $this->assertResponse(200);
-    $this->assertText('You are no longer masquerading as');
-
-    // Assert user does not have roles after masquerading.
-    $this->drupalGet('user');
-    $this->assertResponse(200);
-    $this->clickLink(t('Edit'));
-    $this->assertResponse(200);
-    $this->assertNoFieldChecked("edit-roles-$rid1");
-    $this->assertNoFieldChecked("edit-roles-$rid2");
+    // Switch back + assert user does not have roles after masquerading.
+    $this->switchBack();
+    $this->assertNoRole($rid1);
+    $this->assertNoRole($rid2);
   }
 
 
@@ -150,7 +121,41 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
     }
     $this->drupalPost(NULL, $edit, t('Save configuration'));
     $this->assertResponse(200);
+
   }
+
+  /**
+   * Helper - Masquerade as a set of roles.
+   *
+   * @param $roles Array of rids.
+   * @param $path Path to find the Masquerade block. Defaults to ''.
+   */
+  function masqueradeAsRoles($rids, $path = '') {
+    $this->drupalGet($path);
+    $this->assertResponse(200);
+    $this->assertField('masquerade_role_field[]');
+    $edit = array(
+      'masquerade_role_field[]' => $rids,
+    );
+    $this->drupalPost(NULL, $edit, t('Go'));
+    $this->assertResponse(200);
+    $this->assertText('You are now masquerading as');
+  }
+
+  /**
+   * Helper - Switch back from masquerade.
+   *
+   * @param $path Path to find the Masquerade block. Defaults to ''.
+   */
+  function switchBack($path = '') {
+    $this->drupalGet($path);
+    $this->assertResponse(200);
+    $this->assertLink(t('Switch back'));
+    $this->clickLink(t('Switch back'));
+    $this->assertResponse(200);
+    $this->assertText('You are no longer masquerading as');
+  }
+
 
   /**
    * Helper - Assert that a select option exists.
@@ -174,6 +179,38 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
   function assertNoOption($name, $option, $message = '') {
     $elements = $this->xpath('//select[@name=:name]//option[@value=:option]', array(':name' => $name, ':option' => $option));
     return $this->assertTrue(empty($elements[0]), $message ? $message : t('Option @option for field @name does not exist.', array('@option' => $option, '@name' => $name)), t('Browser'));
+  }
+
+  /**
+   * Helper - Assert that the current user has a role.
+   * Note: the user needs perm 'administer permissions'.
+   *
+   * @param $rid The role ID to assert.
+   * @return TRUE if current user has the role ; FALSE otherwise.
+   */
+  function assertRole($rid) {
+    $this->drupalGet('user');
+    $this->assertResponse(200);
+    $this->clickLink(t('Edit'));
+    $this->assertResponse(200);
+    $this->assertField("edit-roles-$rid");
+    $this->assertFieldChecked("edit-roles-$rid");
+  }
+
+  /**
+   * Helper - Assert that the current user does not have a role.
+   * Note: the user needs perm 'administer permissions'.
+   *
+   * @param $rid The role ID to assert.
+   * @return TRUE if current user has the role ; FALSE otherwise.
+   */
+  function assertNoRole($rid) {
+    $this->drupalGet('user');
+    $this->assertResponse(200);
+    $this->clickLink(t('Edit'));
+    $this->assertResponse(200);
+    $this->assertField("edit-roles-$rid");
+    $this->assertNoFieldChecked("edit-roles-$rid");
   }
 
 }
