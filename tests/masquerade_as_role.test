@@ -23,8 +23,8 @@ class MasqueradeAsRoleTestCase extends DrupalWebTestCase {
 
   function setUp() {
     parent::setUp('masquerade_as_role');
-    $this->user  = $this->drupalCreateUser(array('administer blocks', 'administer permissions', 'administer masquerade', 'masquerade as user'));
-    $this->admin = $this->drupalCreateUser(array('administer blocks', 'administer permissions', 'administer masquerade', 'masquerade as admin'));
+    $this->user  = $this->drupalCreateUser(array('administer blocks', 'administer permissions', 'administer masquerade', 'masquerade as role', 'masquerade as user'));
+    $this->admin = $this->drupalCreateUser(array('administer blocks', 'administer permissions', 'administer masquerade', 'masquerade as role', 'masquerade as admin'));
     $this->drupalLogin($this->user);
     $block = block_load('masquerade', 'masquerade');
     $this->moveBlockToRegion($block, 'content');
